@@ -8,6 +8,9 @@
 
 // A: M * K
 // B: K * N
+
+// 二维的grid，二维的block
+// 是为了方便算矩阵元素的坐标？
 __global__ void sgemm_naive_kernel(float* A, float* B, float* C, int M, int N, int K) {
     const uint x = blockIdx.x * blockDim.x + threadIdx.x;
     const uint y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -33,6 +36,8 @@ void sgemm_naive_cpu(float* A, float* B, float* C, int M, int N, int K) {
     }
 }
 
+// 每个block有32*32个线程
+// 需要开多少个block，视m和n而定
 void run_sgemm_naive(float* A, float* B, float* C, int m, int n, int k) {
     dim3 block_size(32, 32);
     dim3 grid_size(CEIL_DIV(m, 32), CEIL_DIV(n, 32));
