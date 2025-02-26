@@ -2,6 +2,26 @@
 
 #include <iostream>
 
+// ==1922790== NVPROF is profiling process 1922790, command: ./shared_mm
+// Success
+// ==1922790== Profiling application: ./shared_mm
+// ==1922790== Profiling result:
+//             Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+//  GPU activities:   89.20%  765.41us         1  765.41us  765.41us  765.41us  void sgemm_shared_mem_kernel<int=32>(float*, float*, float*, int, int, int)
+//                     8.25%  70.816us         3  23.605us  23.232us  23.872us  [CUDA memcpy HtoD]
+//                     2.55%  21.888us         1  21.888us  21.888us  21.888us  [CUDA memcpy DtoH]
+//       API calls:   99.18%  195.51ms         3  65.170ms  1.9470us  195.51ms  cudaMalloc
+//                     0.59%  1.1662ms         4  291.56us  69.637us  944.39us  cudaMemcpy
+//                     0.12%  239.57us        97  2.4690us     312ns  94.948us  cuDeviceGetAttribute
+//                     0.07%  142.06us         3  47.352us  3.5140us  122.35us  cudaFree
+//                     0.02%  31.742us         1  31.742us  31.742us  31.742us  cudaLaunchKernel
+//                     0.01%  23.231us         1  23.231us  23.231us  23.231us  cuDeviceGetName
+//                     0.01%  12.652us         1  12.652us  12.652us  12.652us  cuDeviceGetPCIBusId
+//                     0.00%  3.5710us         3  1.1900us     319ns  2.6590us  cuDeviceGetCount
+//                     0.00%  1.4810us         2     740ns     303ns  1.1780us  cuDeviceGet
+//                     0.00%     652ns         1     652ns     652ns     652ns  cuDeviceTotalMem
+//                     0.00%     532ns         1     532ns     532ns     532ns  cuDeviceGetUuid
+
 #define CEIL_DIV(M, N) (((M) + (N) - 1) / (N))
 
 void sgemm_naive_cpu(float* A, float* B, float* C, int M, int N, int K) {
