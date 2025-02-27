@@ -101,11 +101,15 @@ __global__ void sgemm_blocktiling_1d_kernel(float* A, float* B, float* C, int M,
 
 void run_sgemm_blocktiling_1d(float* A, float* B, float* C, int m, int n,
                               int k) {
+  // A B C block的大小
   const uint BM = 64;
   const uint BN = 64;
   const uint BK = 8;
+  // 一个线程计算TM行的结果
   const uint TM = 8;
+  // 每个cuda block计算C上的一个block
   dim3 grid_size(CEIL_DIV(n, BN), CEIL_DIV(m, BM));
+  // 每个cuda block上的线程数为BM*BN/TM
   dim3 block_size((BM * BN) / TM);
   sgemm_blocktiling_1d_kernel<BM, BN, BK, TM>
       <<<grid_size, block_size>>>(A, B, C, m, n, k);
