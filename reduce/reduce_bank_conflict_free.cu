@@ -43,6 +43,11 @@ __global__ void reduce_naive_kernel(int* arr, int* out, int len) {
   __syncthreads();
 
   // blockDim.x = 256
+  // 第一次循环，0-127号线程去128-255位置取数据求和
+  // 考虑到bank的排列，每128字节存放在32个bank的一层里，而128个int共占用4层
+  // 所以，0号线程使用的是bank0的第0层和第4层
+  // 1号线程使用的是bank1的第0层和第4层
+  // 32个线程是一个warp，第二个warp的第0号线程使用的是bank0的第1层和第5层
   for (int s = blockDim.x / 2; s > 0; s >>= 1) {
     if (tid < s) {
         sdata[tid] += sdata[tid + s];
