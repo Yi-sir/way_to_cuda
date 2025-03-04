@@ -192,8 +192,8 @@ int main() {
   cudaMemcpy(out_device, out, sizeof(float) * n * k * out_h * out_w,
              cudaMemcpyHostToDevice);
 
-  const int blockDim_x = 16;
-  const int blockDim_y = 16;
+  const int blockDim_x = out_h * out_w;
+  const int blockDim_y = 4;
 
   const int gridDim_x = (out_h * out_w + blockDim_x - 1) / blockDim_x;
   const int gridDim_y = (k + blockDim_y - 1) / blockDim_y;

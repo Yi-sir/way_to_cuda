@@ -23,7 +23,8 @@
 //                     0.00%     676ns         1     676ns     676ns     676ns  cuDeviceTotalMem
 //                     0.00%     527ns         1     527ns     527ns     527ns  cuDeviceGetUuid
 
-const int len = 32 * 1024  * 1024;
+// const int len = 32 * 1024  * 1024;
+const int len = 1111111;
 
 template <int BLOCKSIZE>
 __global__ void reduce_naive_kernel(int* arr, int* out, int len) {
@@ -47,10 +48,10 @@ __global__ void reduce_naive_kernel(int* arr, int* out, int len) {
     // 根据tid计算出sdata上当前需要收集数据的索引
     int index = 2 * s * tid;
     // s是被reduce的间距，index + s不能超过bdim，即thread num
-    // i + s < len，原本是bid*bdim+s<len，似乎改了更好理解
+    // bid * bdim + index + s < len，原本是bid*bdim+s<len，修改之后是对的
     // 这样的好处是，原本只有偶数线程在运算，现在奇数线程也可以参与运算了
     // 从而使得一个warp里尽可能多的线程都在做相同的事情
-    if ((index + s < bdim) && (i + s < len)) {
+    if ((index + s < bdim) && (bid * bdim + index + s < len)) {
       sdata[index] += sdata[index + s];
     }
     __syncthreads();
