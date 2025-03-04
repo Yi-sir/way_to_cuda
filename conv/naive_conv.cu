@@ -1,4 +1,5 @@
 #include <iostream>
+#include <chrono>
 
 // ==2123796== NVPROF is profiling process 2123796, command: ./naive_conv
 // [blockDim.x, blockDim.y, gridDim.x, gridDim.y] = [64, 16, 1009, 1]
@@ -245,8 +246,13 @@ int main() {
   cudaMemcpy(out, out_device, sizeof(float) * n * k * out_h * out_w,
              cudaMemcpyDeviceToHost);
 
+  auto start_time = std::chrono::high_resolution_clock::now();
   naive_conv2d_cpu(n, c, h, w, k, r, s, out_h, out_w, u, v, p, q, in, weight,
                    out_cpu);
+  auto end_time = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+  std::cout << "naive_conv2d_cpu costs: " << duration << "ms.\n";
+  
   bool pass = true;
   for (int i = 0; i < n * k * out_h * out_w; ++i) {
     if (abs(out[i] - out_cpu[i]) > 1e-5) {
