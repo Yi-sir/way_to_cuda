@@ -1,5 +1,29 @@
 #include <iostream>
 
+// ==2123796== NVPROF is profiling process 2123796, command: ./naive_conv
+// [blockDim.x, blockDim.y, gridDim.x, gridDim.y] = [64, 16, 1009, 1]
+// Verification passed!
+// ==2123796== Profiling application: ./naive_conv
+// ==2123796== Profiling result:
+//             Type  Time(%)      Time     Calls       Avg       Min       Max  Name
+//  GPU activities:   52.98%  12.879ms         1  12.879ms  12.879ms  12.879ms  naive_conv2d_kernel(int, int, int, int, int, int, int, int, int, int, int, int, int, float*, float*, float*)
+//                    33.63%  8.1754ms         1  8.1754ms  8.1754ms  8.1754ms  [CUDA memcpy DtoH]
+//                    13.39%  3.2538ms         3  1.0846ms     960ns  2.9464ms  [CUDA memcpy HtoD]
+//       API calls:   86.49%  167.19ms         3  55.729ms  50.427us  167.08ms  cudaMalloc
+//                     6.66%  12.881ms         1  12.881ms  12.881ms  12.881ms  cudaDeviceSynchronize
+//                     6.55%  12.652ms         4  3.1630ms  89.028us  9.1152ms  cudaMemcpy
+//                     0.15%  281.08us         3  93.693us  49.697us  175.99us  cudaFree
+//                     0.12%  224.41us        97  2.3130us     289ns  86.248us  cuDeviceGetAttribute
+//                     0.02%  38.671us         1  38.671us  38.671us  38.671us  cudaLaunchKernel
+//                     0.01%  21.305us         1  21.305us  21.305us  21.305us  cuDeviceGetName
+//                     0.01%  13.996us         1  13.996us  13.996us  13.996us  cuDeviceGetPCIBusId
+//                     0.00%  3.0260us         3  1.0080us     270ns  2.3270us  cuDeviceGetCount
+//                     0.00%  1.4290us         2     714ns     295ns  1.1340us  cuDeviceGet
+//                     0.00%     599ns         1     599ns     599ns     599ns  cuDeviceTotalMem
+//                     0.00%     544ns         1     544ns     544ns     544ns  cuDeviceGetUuid
+//                     0.00%     368ns         1     368ns     368ns     368ns  cudaGetErrorString
+//                     0.00%     248ns         1     248ns     248ns     248ns  cudaGetLastError
+
 /*
  * @param n: batch size
  * @param c: 通道数
@@ -153,11 +177,11 @@ void conv2d_cpu(float* in, float* pwei, float* out, int n, int c, int h, int w,
 
 int main() {
   // 定义输入数据和卷积核的尺寸
-  const int n = 2;                            // batch size
-  const int c = 2;                            // 通道数
-  const int h = 10;                           // 数据高
-  const int w = 10;                           // 数据宽
-  const int k = 5;                            // 卷积核数量
+  const int n = 4;                            // batch size
+  const int c = 3;                            // 通道数
+  const int h = 256;                          // 数据高
+  const int w = 256;                          // 数据宽
+  const int k = 16;                           // 卷积核数量
   const int r = 3;                            // 卷积核高
   const int s = 3;                            // 卷积核宽
   const int u = 1;                            // 卷积在高方向上的步长
@@ -192,11 +216,16 @@ int main() {
   cudaMemcpy(out_device, out, sizeof(float) * n * k * out_h * out_w,
              cudaMemcpyHostToDevice);
 
-  const int blockDim_x = out_h * out_w;
-  const int blockDim_y = 4;
+  const int blockDim_x =
+      (out_h * out_w / k) > 1024/k ? 1024/k : (out_h * out_w / k);
+  const int blockDim_y = k;
 
   const int gridDim_x = (out_h * out_w + blockDim_x - 1) / blockDim_x;
   const int gridDim_y = (k + blockDim_y - 1) / blockDim_y;
+
+  std::cout << "[blockDim.x, blockDim.y, gridDim.x, gridDim.y] = ["
+            << blockDim_x << ", " << blockDim_y << ", " << gridDim_x << ", "
+            << gridDim_y << "]\n";
 
   dim3 blockDim{blockDim_x, blockDim_y};
   dim3 gridDim{gridDim_x, gridDim_y, n};
@@ -205,6 +234,13 @@ int main() {
                                              u, v, p, q, in_device,
                                              weight_device, out_device);
   cudaDeviceSynchronize();
+
+  auto cuda_err = cudaGetLastError();
+  auto cuda_err_str = cudaGetErrorString(cuda_err);
+
+  if (cuda_err != cudaSuccess) {
+    std::cout << cuda_err_str << std::endl;
+  }
 
   cudaMemcpy(out, out_device, sizeof(float) * n * k * out_h * out_w,
              cudaMemcpyDeviceToHost);
@@ -216,7 +252,7 @@ int main() {
     if (abs(out[i] - out_cpu[i]) > 1e-5) {
       pass = false;
       std::cout << "Verification failed at " << i << "!" << std::endl;
-      std::cout << "GPU: " << out_cpu[i] << " CPU: " << out[i] << std::endl;
+      std::cout << "CPU: " << out_cpu[i] << " GPU: " << out[i] << std::endl;
       break;
     }
   }
